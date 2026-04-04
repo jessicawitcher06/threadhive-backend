@@ -1,4 +1,4 @@
-const mongoose = require('mongoose');
+import mongoose from 'mongoose';
 
 const subredditSchema = new mongoose.Schema({
     name: { type: String, required: true, unique: true },
@@ -7,4 +7,5 @@ const subredditSchema = new mongoose.Schema({
     createdAt: { type: Date, required: true }
 });
 
-module.exports = mongoose.model('Subreddit', subredditSchema);
+const Subreddit = mongoose.model('Subreddit', subredditSchema);
+export default Subreddit;

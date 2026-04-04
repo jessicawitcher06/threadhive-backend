@@ -1,4 +1,4 @@
-const mongoose = require('mongoose');
+import mongoose from 'mongoose';
 
 const threadSchema = new mongoose.Schema({
     title: { type: String, required: true },
@@ -11,4 +11,5 @@ const threadSchema = new mongoose.Schema({
     createdAt: { type: Date, required: true }
 });
 
-module.exports = mongoose.model('Thread', threadSchema);
+const Thread = mongoose.model('Thread', threadSchema);
+export default Thread;
