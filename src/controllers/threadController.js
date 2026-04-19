@@ -2,6 +2,7 @@ import mongoose from 'mongoose';
 import {
     fetchAllThreads,
     fetchThreadById,
+    fetchThreadOwnerById,
     createThread,
     updateThreadById,
     deleteThreadById,
@@ -21,14 +22,18 @@ const getRequesterId = (req) => {
 // GET /api/threads
 export const getAllThreads = async (req, res) => {
     try {
-        const { search, subredditId, authorId, sortBy, page = 1, limit = 20 } = req.query;
+        const { search, subredditId, authorId, sortBy } = req.query;
+        const rawPage = Number(req.query.page ?? 1);
+        const rawLimit = Number(req.query.limit ?? 20);
+        const page = Number.isInteger(rawPage) && rawPage > 0 ? rawPage : 1;
+        const limit = Number.isInteger(rawLimit) && rawLimit > 0 ? Math.min(rawLimit, 100) : 20;
         if (subredditId && !isValidObjectId(subredditId)) {
             return res.status(400).json({ success: false, message: 'Invalid subredditId' });
         }
         if (authorId && !isValidObjectId(authorId)) {
             return res.status(400).json({ success: false, message: 'Invalid authorId' });
         }
-        const result = await fetchAllThreads({ search, subredditId, authorId, sortBy, page: Number(page), limit: Number(limit) });
+        const result = await fetchAllThreads({ search, subredditId, authorId, sortBy, page, limit });
         res.status(200).json({ success: true, data: result.threads, pagination: result.pagination });
     } catch (err) {
         res.status(500).json({ success: false, message: 'Server error' });
@@ -98,13 +103,13 @@ export const updateThreadController = async (req, res) => {
     }
 
     try {
-        const existingThread = await fetchThreadById(threadId);
-        if (!existingThread) {
+        const threadOwner = await fetchThreadOwnerById(threadId);
+        if (!threadOwner) {
             return res.status(404).json({ success: false, message: 'Thread not found' });
         }
 
         const requesterId = getRequesterId(req);
-        if (requesterId && String(existingThread.author?._id) !== requesterId) {
+        if (requesterId && String(threadOwner.author) !== requesterId) {
             return res.status(403).json({ success: false, message: 'Not authorized to update this thread' });
         }
 
@@ -139,13 +144,13 @@ export const deleteThreadController = async (req, res) => {
         return res.status(400).json({ success: false, message: 'Invalid thread ID' });
     }
     try {
-        const existingThread = await fetchThreadById(threadId);
-        if (!existingThread) {
+        const threadOwner = await fetchThreadOwnerById(threadId);
+        if (!threadOwner) {
             return res.status(404).json({ success: false, message: 'Thread not found' });
         }
 
         const requesterId = getRequesterId(req);
-        if (requesterId && String(existingThread.author?._id) !== requesterId) {
+        if (requesterId && String(threadOwner.author) !== requesterId) {
             return res.status(403).json({ success: false, message: 'Not authorized to delete this thread' });
         }
 

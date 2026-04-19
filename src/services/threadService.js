@@ -38,6 +38,11 @@ export const fetchThreadById = async (threadId) => {
         .populate('subreddit', 'name description');
 };
 
+// Fetch only thread owner for lightweight auth checks
+export const fetchThreadOwnerById = async (threadId) => {
+    return Thread.findById(threadId).select('author');
+};
+
 // Create a new thread
 export const createThread = async ({ title, content, authorId, subredditId }) => {
     const thread = new Thread({
