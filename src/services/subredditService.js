@@ -2,13 +2,17 @@ import Subreddit from "../models/Subreddit.js";
 import Thread from "../models/Thread.js";
 
 export const fetchAllSubreddits = async () => {
-  // YOUR CODE HERE
+  return await Subreddit.find().populate("author");
 };
 
 export const createNewSubreddit = async (name, description, author) => {
-  // YOUR CODE HERE
+  const subreddit = new Subreddit({ name, description, author });
+  return await subreddit.save();
 };
 
 export const fetchSubredditWithThreads = async (id) => {
-  // YOUR CODE HERE
+  const subreddit = await Subreddit.findById(id).populate("author");
+  if (!subreddit) return null;
+  const threads = await Thread.find({ subreddit: id }).populate("author");
+  return { ...subreddit.toObject(), threads };
 };
