@@ -1,3 +1,4 @@
+import mongoose from 'mongoose';
 import {
     fetchAllThreads,
     fetchThreadById,
@@ -8,25 +9,43 @@ import {
     subredditExists,
 } from '../services/threadService.js';
 
+const isValidObjectId = (value) => mongoose.Types.ObjectId.isValid(value);
+
+const getRequesterId = (req) => {
+    if (!req.user) return null;
+    if (req.user.id) return String(req.user.id);
+    if (req.user._id) return String(req.user._id);
+    return null;
+};
+
 // GET /api/threads
 export const getAllThreads = async (req, res) => {
     try {
         const { search, subredditId, authorId, sortBy, page = 1, limit = 20 } = req.query;
+        if (subredditId && !isValidObjectId(subredditId)) {
+            return res.status(400).json({ success: false, message: 'Invalid subredditId' });
+        }
+        if (authorId && !isValidObjectId(authorId)) {
+            return res.status(400).json({ success: false, message: 'Invalid authorId' });
+        }
         const result = await fetchAllThreads({ search, subredditId, authorId, sortBy, page: Number(page), limit: Number(limit) });
         res.status(200).json({ success: true, data: result.threads, pagination: result.pagination });
     } catch (err) {
-        res.status(500).json({ success: false, error: 'Internal server error' });
+        res.status(500).json({ success: false, message: 'Server error' });
     }
 };
 
 // GET /api/threads/:threadId
 export const getThreadById = async (req, res) => {
     try {
+        if (!isValidObjectId(req.params.threadId)) {
+            return res.status(400).json({ success: false, message: 'Invalid thread ID' });
+        }
         const thread = await fetchThreadById(req.params.threadId);
-        if (!thread) return res.status(404).json({ success: false, error: 'Thread not found' });
+        if (!thread) return res.status(404).json({ success: false, message: 'Thread not found' });
         res.status(200).json({ success: true, data: thread });
     } catch (err) {
-        res.status(500).json({ success: false, error: 'Internal server error' });
+        res.status(500).json({ success: false, message: 'Server error' });
     }
 };
 
@@ -35,6 +54,9 @@ export const createThreadController = async (req, res) => {
     const { title, content, authorId, subredditId } = req.body;
     if (!title || !content || !authorId || !subredditId) {
         return res.status(400).json({ success: false, message: 'Missing required fields' });
+    }
+    if (!isValidObjectId(authorId) || !isValidObjectId(subredditId)) {
+        return res.status(400).json({ success: false, message: 'Invalid authorId or subredditId' });
     }
 
     try {
@@ -65,11 +87,27 @@ export const createThreadController = async (req, res) => {
 export const updateThreadController = async (req, res) => {
     const { threadId } = req.params;
     const { title, content, authorId, subredditId } = req.body;
+    if (!isValidObjectId(threadId)) {
+        return res.status(400).json({ success: false, message: 'Invalid thread ID' });
+    }
     if (!title || !content || !authorId || !subredditId) {
         return res.status(400).json({ success: false, message: 'Missing required fields' });
     }
+    if (!isValidObjectId(authorId) || !isValidObjectId(subredditId)) {
+        return res.status(400).json({ success: false, message: 'Invalid authorId or subredditId' });
+    }
 
     try {
+        const existingThread = await fetchThreadById(threadId);
+        if (!existingThread) {
+            return res.status(404).json({ success: false, message: 'Thread not found' });
+        }
+
+        const requesterId = getRequesterId(req);
+        if (requesterId && String(existingThread.author?._id) !== requesterId) {
+            return res.status(403).json({ success: false, message: 'Not authorized to update this thread' });
+        }
+
         const [authorFound, subredditFound] = await Promise.all([
             userExists(authorId),
             subredditExists(subredditId),
@@ -83,9 +121,6 @@ export const updateThreadController = async (req, res) => {
         }
 
         const updatedThread = await updateThreadById(threadId, { title, content, authorId, subredditId });
-        if (!updatedThread) {
-            return res.status(404).json({ success: false, message: 'Thread not found' });
-        }
 
         return res.status(200).json({
             success: true,
@@ -100,7 +135,20 @@ export const updateThreadController = async (req, res) => {
 // DELETE /api/threads/:threadId
 export const deleteThreadController = async (req, res) => {
     const { threadId } = req.params;
+    if (!isValidObjectId(threadId)) {
+        return res.status(400).json({ success: false, message: 'Invalid thread ID' });
+    }
     try {
+        const existingThread = await fetchThreadById(threadId);
+        if (!existingThread) {
+            return res.status(404).json({ success: false, message: 'Thread not found' });
+        }
+
+        const requesterId = getRequesterId(req);
+        if (requesterId && String(existingThread.author?._id) !== requesterId) {
+            return res.status(403).json({ success: false, message: 'Not authorized to delete this thread' });
+        }
+
         const deletedThread = await deleteThreadById(threadId);
         if (!deletedThread) {
             return res.status(404).json({ success: false, message: 'Thread not found' });
