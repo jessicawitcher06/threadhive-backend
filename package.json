@@ -5,8 +5,8 @@
     "start": "node main.js",
     "populate": "node src/scripts/populate_db.js",
     "dev": "nodemon main.js",
-    "test": "vitest run",
-    "test:watch": "vitest"
+    "test": "node scripts/run-tests.js run",
+    "test:watch": "node scripts/run-tests.js"
   },
   "type": "module",
   "keywords": [],
