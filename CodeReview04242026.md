@@ -266,6 +266,12 @@ app.use(errorHandler);                // Error handler last
 
 ### Gaps
 
+**Current Test Suite: 4 Tests (Verified)**
+1. ✓ Registration and login flow
+2. ✓ Protected routes (401 without token)
+3. ✓ Authorized success path (subreddit + thread creation with token)
+4. ✓ Author spoofing protection (403 on spoofed authorId)
+
 **Missing Test Scenarios**
 - [ ] Duplicate email registration (409 conflict)
 - [ ] Invalid credentials (401 login)
@@ -276,18 +282,17 @@ app.use(errorHandler);                // Error handler last
 - [ ] Thread CRUD operations (create, read, update, delete)
 - [ ] Thread deletion authorization
 - [ ] Concurrent operations (race conditions)
+- [ ] Update/delete ownership checks
+- [ ] Edge cases (empty search, invalid IDs, limits)
 
-**Recommendation:** Expand to 20+ test cases covering:
-- Happy paths for all endpoints
-- Validation failures
-- Authorization failures
-- Edge cases (empty search, invalid IDs, limits)
-- Error scenarios
+**Recommendation:** Expand to 20+ test cases covering all of the above scenarios.
 
 ### Test Quality
 - Setup/teardown clean ✓
 - Async handling correct ✓
 - Assertions meaningful ✓
+- Database isolation excellent ✓
+- Test helper pattern good ✓
 
 ---
 
@@ -566,9 +571,9 @@ The ThreadHive backend is **well-architected, secure, and production-ready**. Th
 **Grade: A (94/100)**
 
 **Deductions:**
-- -3 for limited test coverage (4 tests, recommend 20+)
-- -2 for missing field-level schema validation
-- -1 for minor code duplication
+- -3 for limited test coverage (4 core tests; recommend 20+ covering all endpoints and edge cases)
+- -2 for missing field-level schema validation in schemas
+- -1 for minor code duplication (auth spoofing check)
 
 With the recommended enhancements (particularly expanded tests and schema validation), this would be an A+ project. Ready for production use with confidence.
 
@@ -599,5 +604,6 @@ With the recommended enhancements (particularly expanded tests and schema valida
 - ✓ Vitest + Supertest setup
 - ✓ Memory server or external DB support
 - ✓ Test isolation (database cleared between tests)
-- ⚠️ Limited scenario coverage (expand to 20+)
+- ✓ Core scenarios covered (4 tests: auth, protected routes, spoofing)
+- ⚠️ Limited scope (expand to 20+ for comprehensive coverage of all endpoints and edge cases)
 
