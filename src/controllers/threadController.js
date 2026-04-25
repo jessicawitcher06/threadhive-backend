@@ -20,7 +20,7 @@ const getRequesterId = (req) => {
 };
 
 // GET /api/threads
-export const getAllThreads = async (req, res) => {
+export const getAllThreads = async (req, res, next) => {
     try {
         const { search, subredditId, authorId, sortBy } = req.query;
         const rawPage = Number(req.query.page ?? 1);
@@ -36,26 +36,25 @@ export const getAllThreads = async (req, res) => {
         const result = await fetchAllThreads({ search, subredditId, authorId, sortBy, page, limit });
         res.status(200).json({ success: true, data: result.threads, pagination: result.pagination });
     } catch (err) {
-        res.status(500).json({ success: false, message: 'Server error' });
+        next(err);
     }
 };
 
 // GET /api/threads/:threadId
-export const getThreadById = async (req, res) => {
+export const getThreadById = async (req, res, next) => {
     try {
         if (!isValidObjectId(req.params.threadId)) {
             return res.status(400).json({ success: false, message: 'Invalid thread ID' });
         }
         const thread = await fetchThreadById(req.params.threadId);
-        if (!thread) return res.status(404).json({ success: false, message: 'Thread not found' });
         res.status(200).json({ success: true, data: thread });
     } catch (err) {
-        res.status(500).json({ success: false, message: 'Server error' });
+        next(err);
     }
 };
 
 // POST /api/threads
-export const createThreadController = async (req, res) => {
+export const createThreadController = async (req, res, next) => {
     const { title, content, authorId, subredditId } = req.body;
     if (!title || !content || !authorId || !subredditId) {
         return res.status(400).json({ success: false, message: 'Missing required fields' });
@@ -84,12 +83,12 @@ export const createThreadController = async (req, res) => {
             data: { thread },
         });
     } catch (err) {
-        return res.status(500).json({ success: false, message: 'Server error' });
+        return next(err);
     }
 };
 
 // PUT /api/threads/:threadId
-export const updateThreadController = async (req, res) => {
+export const updateThreadController = async (req, res, next) => {
     const { threadId } = req.params;
     const { title, content, authorId, subredditId } = req.body;
     if (!isValidObjectId(threadId)) {
@@ -104,9 +103,6 @@ export const updateThreadController = async (req, res) => {
 
     try {
         const threadOwner = await fetchThreadOwnerById(threadId);
-        if (!threadOwner) {
-            return res.status(404).json({ success: false, message: 'Thread not found' });
-        }
 
         const requesterId = getRequesterId(req);
         if (requesterId && String(threadOwner.author) !== requesterId) {
@@ -133,36 +129,30 @@ export const updateThreadController = async (req, res) => {
             data: { thread: updatedThread },
         });
     } catch (err) {
-        return res.status(500).json({ success: false, message: 'Server error' });
+        return next(err);
     }
 };
 
 // DELETE /api/threads/:threadId
-export const deleteThreadController = async (req, res) => {
+export const deleteThreadController = async (req, res, next) => {
     const { threadId } = req.params;
     if (!isValidObjectId(threadId)) {
         return res.status(400).json({ success: false, message: 'Invalid thread ID' });
     }
     try {
         const threadOwner = await fetchThreadOwnerById(threadId);
-        if (!threadOwner) {
-            return res.status(404).json({ success: false, message: 'Thread not found' });
-        }
 
         const requesterId = getRequesterId(req);
         if (requesterId && String(threadOwner.author) !== requesterId) {
             return res.status(403).json({ success: false, message: 'Not authorized to delete this thread' });
         }
 
-        const deletedThread = await deleteThreadById(threadId);
-        if (!deletedThread) {
-            return res.status(404).json({ success: false, message: 'Thread not found' });
-        }
+        await deleteThreadById(threadId);
         return res.status(200).json({
             success: true,
             message: 'Thread deleted successfully',
         });
     } catch (err) {
-        return res.status(500).json({ success: false, message: 'Server error' });
+        return next(err);
     }
 };

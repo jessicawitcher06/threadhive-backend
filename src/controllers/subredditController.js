@@ -4,7 +4,7 @@ import {
   fetchSubredditWithThreads,
 } from "../services/subredditService.js";
 
-export const getAllSubreddits = async (req, res) => {
+export const getAllSubreddits = async (req, res, next) => {
   try {
     const subreddits = await fetchAllSubreddits();
     res.status(200).json({
@@ -13,20 +13,16 @@ export const getAllSubreddits = async (req, res) => {
       data: { subreddits },
     });
   } catch (err) {
-    res.status(500).json({ success: false, message: "Server error" });
+    next(err);
   }
 };
 
-export const createSubreddit = async (req, res) => {
+export const createSubreddit = async (req, res, next) => {
   const { name, description, author } = req.body;
   if (!name || !description || !author) {
     return res.status(400).json({ success: false, message: "Missing required fields" });
   }
   try {
-    const existing = await fetchAllSubreddits();
-    if (existing.some((s) => s.name === name)) {
-      return res.status(409).json({ success: false, message: "Subreddit name already exists" });
-    }
     const subreddit = await createNewSubreddit(name, description, author);
     res.status(201).json({
       success: true,
@@ -34,23 +30,20 @@ export const createSubreddit = async (req, res) => {
       data: { subreddit },
     });
   } catch (err) {
-    res.status(500).json({ success: false, message: "Server error" });
+    next(err);
   }
 };
 
-export const getSubredditWithThreads = async (req, res) => {
+export const getSubredditWithThreads = async (req, res, next) => {
   const { id } = req.params;
   try {
     const subreddit = await fetchSubredditWithThreads(id);
-    if (!subreddit) {
-      return res.status(404).json({ success: false, message: "Subreddit not found" });
-    }
     res.status(200).json({
       success: true,
       message: "Fetched subreddit",
       data: { subreddit },
     });
   } catch (err) {
-    res.status(500).json({ success: false, message: "Server error" });
+    next(err);
   }
 };

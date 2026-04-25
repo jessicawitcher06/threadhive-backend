@@ -1,6 +1,7 @@
 import Thread from '../models/Thread.js';
 import User from '../models/User.js';
 import Subreddit from '../models/Subreddit.js';
+import { createAppError } from '../utils/createAppError.js';
 
 // Fetch all threads with filtering, sorting, and pagination
 export const fetchAllThreads = async ({ search, subredditId, authorId, sortBy = 'newest', page = 1, limit = 20 }) => {
@@ -33,14 +34,26 @@ export const fetchAllThreads = async ({ search, subredditId, authorId, sortBy = 
 
 // Fetch a single thread by ID
 export const fetchThreadById = async (threadId) => {
-    return Thread.findById(threadId)
+    const thread = await Thread.findById(threadId)
         .populate('author', 'name email')
         .populate('subreddit', 'name description');
+
+    if (!thread) {
+        throw createAppError('Thread not found', 404);
+    }
+
+    return thread;
 };
 
 // Fetch only thread owner for lightweight auth checks
 export const fetchThreadOwnerById = async (threadId) => {
-    return Thread.findById(threadId).select('author');
+    const thread = await Thread.findById(threadId).select('author');
+
+    if (!thread) {
+        throw createAppError('Thread not found', 404);
+    }
+
+    return thread;
 };
 
 // Create a new thread
@@ -52,14 +65,20 @@ export const createThread = async ({ title, content, authorId, subredditId }) =>
         subreddit: subredditId,
     });
     const created = await thread.save();
-    return Thread.findById(created._id)
+    const populatedThread = await Thread.findById(created._id)
         .populate('author', 'name email')
         .populate('subreddit', 'name description');
+
+    if (!populatedThread) {
+        throw createAppError('Thread creation failed', 500);
+    }
+
+    return populatedThread;
 };
 
 // Update an existing thread
 export const updateThreadById = async (threadId, { title, content, authorId, subredditId }) => {
-    return Thread.findByIdAndUpdate(
+    const updatedThread = await Thread.findByIdAndUpdate(
         threadId,
         {
             title,
@@ -71,11 +90,23 @@ export const updateThreadById = async (threadId, { title, content, authorId, sub
     )
         .populate('author', 'name email')
         .populate('subreddit', 'name description');
+
+    if (!updatedThread) {
+        throw createAppError('Thread not found', 404);
+    }
+
+    return updatedThread;
 };
 
 // Delete a thread
 export const deleteThreadById = async (threadId) => {
-    return Thread.findByIdAndDelete(threadId);
+    const deletedThread = await Thread.findByIdAndDelete(threadId);
+
+    if (!deletedThread) {
+        throw createAppError('Thread not found', 404);
+    }
+
+    return deletedThread;
 };
 
 export const userExists = async (userId) => {
