@@ -55,13 +55,23 @@ export const getThreadById = async (req, res, next) => {
 
 // POST /api/threads
 export const createThreadController = async (req, res, next) => {
-    const { title, content, authorId, subredditId } = req.body;
-    if (!title || !content || !authorId || !subredditId) {
+    const { title, content, authorId: bodyAuthorId, subredditId } = req.body;
+    const requesterId = getRequesterId(req);
+
+    if (!title || !content || !subredditId) {
         return res.status(400).json({ success: false, message: 'Missing required fields' });
     }
-    if (!isValidObjectId(authorId) || !isValidObjectId(subredditId)) {
-        return res.status(400).json({ success: false, message: 'Invalid authorId or subredditId' });
+    if (!requesterId) {
+        return res.status(401).json({ success: false, message: 'Authentication required' });
     }
+    if (bodyAuthorId && String(bodyAuthorId) !== requesterId) {
+        return res.status(403).json({ success: false, message: 'Cannot create thread for another user' });
+    }
+    if (!isValidObjectId(subredditId)) {
+        return res.status(400).json({ success: false, message: 'Invalid subredditId' });
+    }
+
+    const authorId = requesterId;
 
     try {
         const [authorFound, subredditFound] = await Promise.all([
@@ -90,21 +100,30 @@ export const createThreadController = async (req, res, next) => {
 // PUT /api/threads/:threadId
 export const updateThreadController = async (req, res, next) => {
     const { threadId } = req.params;
-    const { title, content, authorId, subredditId } = req.body;
+    const { title, content, authorId: bodyAuthorId, subredditId } = req.body;
+    const requesterId = getRequesterId(req);
+
     if (!isValidObjectId(threadId)) {
         return res.status(400).json({ success: false, message: 'Invalid thread ID' });
     }
-    if (!title || !content || !authorId || !subredditId) {
+    if (!title || !content || !subredditId) {
         return res.status(400).json({ success: false, message: 'Missing required fields' });
     }
-    if (!isValidObjectId(authorId) || !isValidObjectId(subredditId)) {
-        return res.status(400).json({ success: false, message: 'Invalid authorId or subredditId' });
+    if (!requesterId) {
+        return res.status(401).json({ success: false, message: 'Authentication required' });
     }
+    if (bodyAuthorId && String(bodyAuthorId) !== requesterId) {
+        return res.status(403).json({ success: false, message: 'Cannot update thread as another user' });
+    }
+    if (!isValidObjectId(subredditId)) {
+        return res.status(400).json({ success: false, message: 'Invalid subredditId' });
+    }
+
+    const authorId = requesterId;
 
     try {
         const threadOwner = await fetchThreadOwnerById(threadId);
 
-        const requesterId = getRequesterId(req);
         if (requesterId && String(threadOwner.author) !== requesterId) {
             return res.status(403).json({ success: false, message: 'Not authorized to update this thread' });
         }
@@ -136,13 +155,18 @@ export const updateThreadController = async (req, res, next) => {
 // DELETE /api/threads/:threadId
 export const deleteThreadController = async (req, res, next) => {
     const { threadId } = req.params;
+    const requesterId = getRequesterId(req);
+
     if (!isValidObjectId(threadId)) {
         return res.status(400).json({ success: false, message: 'Invalid thread ID' });
     }
+    if (!requesterId) {
+        return res.status(401).json({ success: false, message: 'Authentication required' });
+    }
+
     try {
         const threadOwner = await fetchThreadOwnerById(threadId);
 
-        const requesterId = getRequesterId(req);
         if (requesterId && String(threadOwner.author) !== requesterId) {
             return res.status(403).json({ success: false, message: 'Not authorized to delete this thread' });
         }

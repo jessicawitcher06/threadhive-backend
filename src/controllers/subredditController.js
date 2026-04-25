@@ -18,12 +18,21 @@ export const getAllSubreddits = async (req, res, next) => {
 };
 
 export const createSubreddit = async (req, res, next) => {
-  const { name, description, author } = req.body;
-  if (!name || !description || !author) {
+  const { name, description, author: bodyAuthor } = req.body;
+  const requesterId = req.user?.id ? String(req.user.id) : null;
+
+  if (!name || !description) {
     return res.status(400).json({ success: false, message: "Missing required fields" });
   }
+  if (!requesterId) {
+    return res.status(401).json({ success: false, message: "Authentication required" });
+  }
+  if (bodyAuthor && String(bodyAuthor) !== requesterId) {
+    return res.status(403).json({ success: false, message: "Cannot create subreddit for another user" });
+  }
+
   try {
-    const subreddit = await createNewSubreddit(name, description, author);
+    const subreddit = await createNewSubreddit(name, description, requesterId);
     res.status(201).json({
       success: true,
       message: "Subreddit created",
