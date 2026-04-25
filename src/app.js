@@ -1,5 +1,7 @@
 import express from "express";
 import cors from "cors";
+import helmet from "helmet";
+import rateLimit from "express-rate-limit";
  import threadRoutes from './routes/threads.js';
 import subredditRoutes from "./routes/subreddits.js";
 import authRoutes from "./routes/auth.js";
@@ -13,6 +15,16 @@ import "./models/User.js";
 const app = express();
 
 // Middlewares
+app.use(helmet());
+
+const limiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: 100,
+  standardHeaders: "draft-8",
+  legacyHeaders: false,
+});
+
+app.use(limiter);
 app.use(cors());
 app.use(express.json({ limit: "10mb" }));
 app.use(
