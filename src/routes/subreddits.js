@@ -1,4 +1,5 @@
 import express from 'express';
+import authHandler from '../middleware/authHandler.js';
 import {
     getAllSubreddits,
     createSubreddit,
@@ -8,7 +9,7 @@ import {
 const router = express.Router();
 
 router.get('/', getAllSubreddits);
-router.post('/', createSubreddit);
+router.post('/', authHandler, createSubreddit);
 router.get('/:id', getSubredditWithThreads);
 
 export default router;

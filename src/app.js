@@ -2,6 +2,7 @@ import express from "express";
 import cors from "cors";
  import threadRoutes from './routes/threads.js';
 import subredditRoutes from "./routes/subreddits.js";
+import authRoutes from "./routes/auth.js";
 import errorHandler from "./middleware/errorHandler.js";
 
 // Import models so that they are registered with Mongoose
@@ -24,6 +25,7 @@ app.use(
 // Routes
  app.use('/api/threads', threadRoutes);
 app.use("/api/subreddits", subredditRoutes);
+app.use("/api/auth", authRoutes);
 
 app.use(errorHandler);
 
