@@ -79,15 +79,6 @@ The ThreadHive backend demonstrates solid architectural fundamentals with proper
 - [ ] Email format validation (regex or validator library)
 - [ ] Password strength requirements (min length, complexity)
 - [ ] String length limits on title/content/description fields
-- [ ] SQL injection not applicable (Mongoose handles parameterization), but regex injection possible in search (`$regex` with user input)
-  - **Risk:** Low (case-insensitive only), but consider escaping special regex chars
-
-**Example Enhancement:**
-```javascript
-// In threadController.js - sanitize search input
-const escapeRegex = (str) => str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-const sanitizedSearch = search ? escapeRegex(search) : search;
-```
 
 **Suggestion:** Implement centralized validation middleware or use a library like `joi` or `zod` for schemas.
 
@@ -439,10 +430,8 @@ app.use(errorHandler);                // Error handler last
 4. **Standardize response envelope** (consistent data nesting)
 
 ### Low Priority 🟢
-1. Add regex injection escaping in search filter
-2. Add refresh token mechanism (if supporting longer sessions)
-3. Improve error message specificity (for debugging)
-4. Performance monitoring/caching (if needed at scale)
+1. Improve error message specificity (for debugging)
+2. Performance monitoring/caching (if needed at scale)
 
 ---
 
@@ -477,24 +466,38 @@ app.use(errorHandler);                // Error handler last
 
 ## 15. Recommended Next Steps
 
-**Immediate (Before Submission)**
+### Week 4 Completion (Immediate)
 - [ ] Run `npm run test` and verify passing
 - [ ] Verify all `.env` variables set correctly
 - [ ] Test against external MongoDB (not just memory server)
+- [ ] Review this code feedback
 
-**Short Term (After Week 4)**
-1. Add schema-level field validation
-2. Expand test suite to 20+ scenarios
-3. Add database indexes
-4. Implement password strength requirements
-5. Add email format validation
+---
 
-**Medium Term**
+## 16. Production Roadmap (Beyond Week 4)
+
+This section separates recommended enhancements for production deployment from the solid foundation already in place.
+
+### Phase 1: Validation & Testing (Next Course Sprint)
+1. Add schema-level field validation (minlength, maxlength, trim)
+2. Implement email format validation
+3. Add password strength requirements (min 8 chars, uppercase, numbers)
+4. Expand test suite from 4 to 20+ scenarios
+5. Add database indexes (author, subreddit, createdAt on Thread)
+
+### Phase 2: Enterprise Features (Production Hardening)
+1. Implement refresh token flow (JWT expiration is 1 hour)
+2. Add password reset/account recovery flow
+3. Implement account lockout after N failed login attempts
+4. Add request audit logging (Winston/Pino)
+5. Set up performance monitoring and alerting
+
+### Phase 3: Scale & Polish (Post-Launch)
 1. Add API documentation (Swagger/OpenAPI)
-2. Implement logging (Winston or Pino)
-3. Add performance monitoring
-4. Implement refresh token flow
-5. Add account recovery/reset flow
+2. Implement caching layer (Redis) for frequently accessed subreddits
+3. Add denormalization for thread counts on subreddit (if query perf needed)
+4. Set up automated backups and disaster recovery
+5. Implement analytics and usage tracking
 
 ---
 
